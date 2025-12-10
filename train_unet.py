@@ -19,6 +19,7 @@ from unet_model import UNET
 from tqdm import tqdm
 
 
+""" Class to load the MRI Dataset """
 class MRIDataset(Dataset):
     def __init__(self,data,masks,transform=None):
         self.data=data
@@ -39,7 +40,7 @@ class MRIDataset(Dataset):
         return sample, mask
 
 if __name__=="__main__":
-    root_dir="/home/kuka/Harsh Stuff/MRI Dataset Kaggle/archive/kaggle_3m"
+    root_dir="path/" # Path to root directory
     dirs=os.listdir(root_dir)
     
     total_data_x=[]
@@ -59,13 +60,15 @@ if __name__=="__main__":
             total_data_x.append(img_x)
             total_data_y.append(img_y)
 
+    # Train test val split (80% -> 10% -> 10%)
     indx_lst=list(range(len(total_data_x)))
     random.shuffle(indx_lst)
     train_indx=indx_lst[0:int(0.8*len(indx_lst))]
     val_indx=indx_lst[int(0.8*len(indx_lst)):int(0.9*len(indx_lst))]
     test_indx=indx_lst[int(0.9*len(indx_lst)):len(indx_lst)]
 
-    
+
+    # Saving the test indices for testing script
     filename = 'test_indices.pkl'
 
     with open(filename, 'wb') as file:
@@ -81,6 +84,7 @@ if __name__=="__main__":
     val_x=[total_data_x[i] for i in val_indx]
     val_y=[total_data_y[i] for i in val_indx]
 
+    # Transform to convert to tensor
     transform=transforms.Compose([
         transforms.ToTensor()
     ])
@@ -102,13 +106,14 @@ if __name__=="__main__":
     unet_model.to(device)
 
     NUM_EPOCHS=100
-    optimizer=optim.AdamW(unet_model.parameters(),lr=0.0002)
+    optimizer=optim.AdamW(unet_model.parameters(),lr=0.0001)
     criterion=nn.BCEWithLogitsLoss()
 
     for epoch in range(0,NUM_EPOCHS):
         unet_model.train()
         epoch_loss=0
         step=0
+        
         # Train
         for batch_idx,(img,mask) in enumerate(tqdm(train_loader, desc=f'Epoch {epoch+1}/{NUM_EPOCHS} - Training')):
             
@@ -147,4 +152,4 @@ if __name__=="__main__":
         print(f"Val Loss: {val_loss}")
 
         if((epoch+1)%10==0):
-            torch.save(unet_model.state_dict(), f'/home/kuka/Harsh Stuff/Unet-Mri/saves/unet_model_epoch_{epoch+1}.pth')
+            torch.save(unet_model.state_dict(), f'saves/unet_model_epoch_{epoch+1}.pth')
